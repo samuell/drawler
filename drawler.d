@@ -1,27 +1,54 @@
 import std.net.curl, std.stdio, std.regex, std.algorithm, std.string;
+import arsd.mysql;
 
-void main() {
-	string curLink = "http://saml.rilspace.org";
-	string s = cast(string) get(curLink);
-	
-	// Create compiled RegEx for fast execution 
-	enum link_regex = ctRegex!("href=\"([^\"]+)\"","g");
-	
-	string[] links;
-	
-	foreach(match; match(s, link_regex)) {
-		string link = match.captures[1];
-		if (link.endsWith("/")) {
-			link = chop(link);
+void main(string[] args) {
+	if (args.length < 2) {
+		writeln("Error: You must specify an URL, like so: ./drawler http://example.com");
+	} else {
+		string currentUrl = args[1]; // Get the URL to start with, from the command line 
+		string htmlData = cast(string) get(currentUrl); // Read the webpage (cast from char[] to string)
+		string[] urls = extractUrls(htmlData, currentUrl);
+		
+		foreach(l; urls) {
+			writefln("Found url: %s", l);
 		}
-		if (link.startsWith("/")) {
-			link = curLink ~ link;
-		}
-		links ~= link;
-		writefln("Adding link %s ...", link);
-	}
+
+		/*
+		auto mysql = new MySql("localhost", "drawler", "drawler", "drawler");
 	
-	foreach(l; links) {
-		writefln("Link: %s", l);
+		// ? based placeholders do conversion and escaping for you
+		foreach(line; mysql.query("select siteid, linkid from links where siteid > ?", 5)) {
+	         // access columns by name
+	         writefln("%s: %s", line["siteid"], line["linkid"]);
+	    }
+		*/
 	}
 }
+
+string[] extractUrls(string htmlData, string currentUrl) {
+	string[] urls;
+	// Create compiled RegEx (for fast execution) 
+	enum url_regex = ctRegex!("href=\"([^\"]+)\"","g");
+
+	foreach(match; match(htmlData, url_regex)) {
+		string url = match.captures[1];
+		url = stripTrailingSlash(url);
+		url = ensureAbsoluteUrl(url, currentUrl);
+		urls ~= url; // Add url to the urls array
+	}
+	return urls; 
+}
+
+string stripTrailingSlash(string url) {
+	if (url.endsWith("/")) {
+		url = chop(url); 
+	}
+	return url;
+}
+
+string ensureAbsoluteUrl(string url, string currentUrl) {
+	if (url.startsWith("/")) {
+		url = currentUrl ~ url;
+	}
+	return url;
+}	
