@@ -1,10 +1,27 @@
-import std.net.curl, std.stdio, std.regex;
+import std.net.curl, std.stdio, std.regex, std.algorithm, std.string;
 
 void main() {
-	string s = cast(string) get("http://saml.rilspace.org");
-	auto link_regex = regex(r"http(s)?://[A-Za-z\.\/]+","g");
+	string curLink = "http://saml.rilspace.org";
+	string s = cast(string) get(curLink);
 	
-	foreach(m; match(s, link_regex)) {
-		writefln("Link: %s", m.hit);
+	// Create compiled RegEx for fast execution 
+	enum link_regex = ctRegex!("href=\"([^\"]+)\"","g");
+	
+	string[] links;
+	
+	foreach(match; match(s, link_regex)) {
+		string link = match.captures[1];
+		if (link.endsWith("/")) {
+			link = chop(link);
+		}
+		if (link.startsWith("/")) {
+			link = curLink ~ link;
+		}
+		links ~= link;
+		writefln("Adding link %s ...", link);
+	}
+	
+	foreach(l; links) {
+		writefln("Link: %s", l);
 	}
 }
