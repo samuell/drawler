@@ -8,5 +8,5 @@ CREATE TABLE `links` (
   `indexdate` date default NULL,
   `level` int(11) default NULL,
   PRIMARY KEY  (`linkid`),
-  KEY `url` (`url`),
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+  KEY `url` (`url`)
+);
