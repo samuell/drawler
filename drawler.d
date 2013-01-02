@@ -12,16 +12,9 @@ void main(string[] args) {
         foreach(l; urls) {
             writefln("Found url: %s", l);
         }
-
-        /*
-        auto mysql = new MySql("localhost", "drawler", "drawler", "drawler");
-    
-        // ? based placeholders do conversion and escaping for you
-        foreach(line; mysql.query("select siteid, linkid from links where siteid > ?", 5)) {
-             // access columns by name
-             writefln("%s: %s", line["siteid"], line["linkid"]);
-        }
-        */
+        
+        MySqlConnection mySqlConn = new MySqlConnection;
+        mySqlConn.addLinks(urls);
     }
 }
 
@@ -52,3 +45,28 @@ string ensureAbsoluteUrl(string url, string currentUrl) {
     }
     return url;
 }    
+
+class MySqlConnection {
+    MySql mysql;
+
+    this() {
+        this.mysql = new MySql("localhost", "drawler", "drawler", "drawler");
+    }
+
+    string[] getLinks() {
+        string[] links;
+        // ? based placeholders do conversion and escaping for you
+        foreach(line; this.mysql.query("SELECT siteid, linkid FROM links")) {
+             // access columns by name
+             writefln("%s: %s", line["siteid"], line["linkid"]);
+        } 
+        return links;
+    }
+    
+    void addLinks(string[] links) {
+        foreach(link; links) {
+            this.mysql.query("INSERT INTO drawler.links ( url ) VALUES ( ? );", link);
+        }
+    }
+    
+}
