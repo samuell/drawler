@@ -1,4 +1,4 @@
-import std.net.curl, std.stdio, std.regex, std.algorithm, std.string, std.array;
+import std.net.curl, std.stdio, std.regex, std.algorithm, std.string, std.array, std.datetime;
 import arsd.mysql;
 
 void main(string[] args) {
@@ -84,6 +84,15 @@ string ensureAbsoluteUrl(string url, string currentUrl) {
     return url;
 }
 
+string currentDate() {
+    string isotime = Clock.currTime.toISOString();
+    string y = isotime[0..4];
+    string m = isotime[4..6];
+    string d = isotime[6..8];
+    string currentDate = y ~ "-" ~ m ~ "-" ~ d;
+    return currentDate; 
+}
+
 class MySqlConnection {
     MySql mysql;
 
@@ -103,11 +112,17 @@ class MySqlConnection {
 
     void addLinks(string[] links) {
         foreach(link; links) {
-            this.mysql.query("INSERT INTO drawler.links ( url ) VALUES ( ? );", link);
+            if (this.mysql.query("SELECT url from links WHERE url LIKE ?;", link).length > 0) {
+                // writefln("Found link: %s, so skipping it...", link);
+            } else {
+                writefln("Did NOT find link: %s, so adding it ...", link);
+                this.mysql.query("INSERT INTO drawler.links ( url ) VALUES ( ? );", link);
+            }
+            
         }
     }
 
     void updateUrlWithFulltext(string url, string fulltext) {
-        this.mysql.query("UPDATE links SET fulltxt='" ~ fulltext ~ "' WHERE url='" ~ url ~ "';");
+        this.mysql.query("UPDATE links SET fulltxt='" ~ fulltext ~ "',indexdate='"~ currentDate() ~"' WHERE url='" ~ url ~ "';");
     }
 }
