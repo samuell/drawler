@@ -4,7 +4,7 @@ CREATE TABLE `links` (
   `url` varchar(255) NOT NULL,
   `title` varchar(200) default NULL,
   `description` varchar(255) default NULL,
-  `fulltext` mediumtext,
+  `fulltxt` mediumtext,
   `indexdate` date default NULL,
   `level` int(11) default NULL,
   PRIMARY KEY  (`linkid`),
