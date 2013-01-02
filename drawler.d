@@ -8,10 +8,12 @@ void main(string[] args) {
         string currentUrl = args[1]; // Get the URL to start with, from the command line 
         string htmlData = cast(string) get(currentUrl); // Read the webpage (cast from char[] to string)
         string[] urls = extractUrls(htmlData, currentUrl);
+        string title = extractTitle(htmlData);
+        writefln("Title: %s", title); // TODO: Remove debug code
         
-        foreach(l; urls) {
-            writefln("Found url: %s", l);
-        }
+//        foreach(l; urls) {
+//            writefln("Found url: %s", l);
+//        }
         
         MySqlConnection mySqlConn = new MySqlConnection;
         mySqlConn.addLinks(urls);
@@ -21,15 +23,23 @@ void main(string[] args) {
 string[] extractUrls(string htmlData, string currentUrl) {
     string[] urls;
     // Create compiled RegEx (for fast execution) 
-    enum url_regex = ctRegex!("href=\"([^\"]+)\"","g");
+    enum urlRegex = ctRegex!("href=\"([^\"]+)\"","g");
 
-    foreach(match; match(htmlData, url_regex)) {
+    foreach(match; match(htmlData, urlRegex)) {
         string url = match.captures[1];
         url = stripTrailingSlash(url);
         url = ensureAbsoluteUrl(url, currentUrl);
         urls ~= url; // Add url to the urls array
     }
     return urls; 
+}
+
+string extractTitle(string htmlData) {
+    string title;
+    enum titleRegex = ctRegex!(r"<title.*?>(.*?)</title>","g");
+    auto match = match(htmlData, titleRegex);
+    title = match.captures[1];
+    return title; 
 }
 
 string stripTrailingSlash(string url) {
