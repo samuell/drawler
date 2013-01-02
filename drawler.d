@@ -1,4 +1,4 @@
-import std.net.curl, std.stdio, std.regex, std.algorithm, std.string;
+import std.net.curl, std.stdio, std.regex, std.algorithm, std.string, std.array;
 import arsd.mysql;
 
 void main(string[] args) {
@@ -7,16 +7,19 @@ void main(string[] args) {
     } else {
         string currentUrl = args[1]; // Get the URL to start with, from the command line 
         string htmlData = cast(string) get(currentUrl); // Read the webpage (cast from char[] to string)
+
         string[] urls = extractUrls(htmlData, currentUrl);
-        string title = extractTitle(htmlData);
-        writefln("Title: %s", title); // TODO: Remove debug code
+        urls = urls ~ currentUrl;
         
-//        foreach(l; urls) {
-//            writefln("Found url: %s", l);
-//        }
+        string title = extractTitle(htmlData);
+        string fulltext = extractFulltext(htmlData);
+        
+        writefln("Title: %s", title); // TODO: Remove debug code
+        // writefln("Fulltext: \n%s", fulltext); // TODO: Remove debug code
         
         MySqlConnection mySqlConn = new MySqlConnection;
         mySqlConn.addLinks(urls);
+        mySqlConn.updateUrlWithFulltext(currentUrl, fulltext);
     }
 }
 
@@ -36,10 +39,33 @@ string[] extractUrls(string htmlData, string currentUrl) {
 
 string extractTitle(string htmlData) {
     string title;
-    enum titleRegex = ctRegex!(r"<title.*?>(.*?)</title>","g");
-    auto match = match(htmlData, titleRegex);
-    title = match.captures[1];
     return title; 
+}
+
+string extractFulltext(string htmlData) {
+    string fullText;
+    string bodyHtml;
+    
+    // Remove newline characters
+    htmlData = join(htmlData.splitLines(), " ");
+     
+    enum bodyRegex = ctRegex!(r"<body.*?>(.*?)</body>","g");
+    auto match = match(htmlData, bodyRegex);
+    bodyHtml = match.captures[1];
+
+    // Remove all HTML tags
+    enum htmlTagRegex = ctRegex!(r"<[^\>]*?>","g");
+    fullText = bodyHtml.replace(htmlTagRegex, "");
+
+    // Remove excess whitespace / tabs
+    enum excessSpaceRegex = ctRegex!(r"[\s\t]+","g");
+    fullText = fullText.replace(excessSpaceRegex," ");
+    
+    // Remove non-word characters
+    enum unallowedCharsRegex = ctRegex!(r"[^A-Za-z0-9\-\.\,\sÅÄÖåäö]","g");
+    fullText = fullText.replace(unallowedCharsRegex,"");
+
+    return fullText;
 }
 
 string stripTrailingSlash(string url) {
@@ -79,4 +105,7 @@ class MySqlConnection {
         }
     }
     
+    void updateUrlWithFulltext(string url, string fulltext) {
+        this.mysql.query("UPDATE links SET fulltxt='" ~ fulltext ~ "' WHERE url='" ~ url ~ "';");
+    }
 }
