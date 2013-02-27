@@ -1,15 +1,30 @@
-import std.net.curl, std.stdio, std.regex, std.algorithm, std.string, std.array, std.datetime;
+import std.net.curl;
+import std.stdio;
+import std.regex;
+import std.algorithm;
+import std.string;
+import std.array;
+import std.datetime;
 import arsd.mysql;
 
 void main(string[] args) {
     if (args.length < 2) {
         writeln("Error: You must specify an URL, like so: ./drawler http://example.com");
     } else {
-        string currentUrl = args[1]; // Get the URL to start with, from the command line
-        string htmlData = cast(string) get(currentUrl); // Read the webpage (cast from char[] to string)
+        // Get the URL to start with, from the command line
+        string currentUrl = args[1]; 
+        // Read the webpage (cast from char[] to string)
+        string htmlData = cast(string) get(currentUrl); 
 
-        string[] urls = extractUrls(htmlData, currentUrl);
-        urls = urls ~ currentUrl;
+        string[] urls;
+        urls ~= currentUrl;
+        writeln("URLS: ", urls, ", Current URL: ", currentUrl);
+		urls ~= extractUrls(htmlData, currentUrl);
+
+        // DEBUG CODE
+//        foreach (url; urls) {
+//            writeln(url);
+//        }
 
         string title = extractTitle(htmlData);
         string fulltext = extractFulltext(htmlData);
@@ -89,8 +104,9 @@ string currentDate() {
     string y = isotime[0..4];
     string m = isotime[4..6];
     string d = isotime[6..8];
-    string currentDate = y ~ "-" ~ m ~ "-" ~ d;
-    return currentDate; 
+    string currentDate = [y, m, d].join("-");
+    // writeln("Current date: ", currentDate);
+    return currentDate;
 }
 
 class MySqlConnection {
@@ -118,7 +134,7 @@ class MySqlConnection {
                 writefln("Did NOT find link: %s, so adding it ...", link);
                 this.mysql.query("INSERT INTO drawler.links ( url ) VALUES ( ? );", link);
             }
-            
+
         }
     }
 

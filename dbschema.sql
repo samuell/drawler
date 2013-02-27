@@ -1,3 +1,4 @@
+DROP TABLE `links`;
 CREATE TABLE `links` (
   `linkid` int(11) NOT NULL auto_increment,
   `siteid` int(11) default NULL,
